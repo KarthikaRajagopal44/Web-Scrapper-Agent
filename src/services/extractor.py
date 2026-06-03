@@ -1,0 +1,64 @@
+from typing import Type, Union
+from pydantic import BaseModel
+from langchain_google_genai import ChatGoogleGenerativeAI
+from langchain_core.prompts import ChatPromptTemplate
+from src.config import settings
+from src.schemas.extraction import EcommerceProduct, LegalCompliance
+from src.utils.exceptions import ExtractionException
+
+class ExtractorService:
+    def __init__(self):
+        # Initialize Gemini 1.5 Flash via free Google AI Studio key
+        self.llm = ChatGoogleGenerativeAI(
+            model=settings.MODEL_NAME,
+            google_api_key=settings.GOOGLE_API_KEY,
+            temperature=0.0  # Set temperature to 0.0 to prevent hallucinations
+        )
+
+    @staticmethod
+    def _truncate_text(text: str, max_length: int) -> str:
+        # Prevent token window overflow (Intelligent Truncation safeguard)
+        if len(text) > max_length:
+            return text[:max_length] + "... [Text truncated for context-size safety]"
+        return text
+
+    async def extract_structured_data(
+        self, 
+        text: str, 
+        extraction_type: str
+    ) -> Union[EcommerceProduct, LegalCompliance]:
+        
+        # Select target schema based on payload
+        if extraction_type == "e_commerce_product":
+            schema: Type[BaseModel] = EcommerceProduct
+            system_prompt = (
+                "You are an expert data extraction bot. Your task is to extract "
+                "e-commerce product information from the provided text. Fill in the "
+                "fields exactly. If any information is missing, do not hallucinate—return null."
+            )
+        else:
+            schema = LegalCompliance
+            system_prompt = (
+                "You are an expert legal compliance compliance analyst. Your task is to extract "
+                "compliance indicators, clauses, risks, and overview data from the text. "
+                "Do not make up facts; return null for any field not explicitly mentioned."
+            )
+
+        truncated_text = self._truncate_text(text, settings.MAX_TEXT_LENGTH)
+
+        # Set up a structured message prompt
+        prompt = ChatPromptTemplate.from_messages([
+            ("system", system_prompt),
+            ("user", "Source Text:\n\n{input_text}\n\nPerform extraction strictly conforming to the requested schema.")
+        ])
+
+        try:
+            # Bind the strict Pydantic model directly to the LLM
+            structured_llm = self.llm.with_structured_output(schema)
+            chain = prompt | structured_llm
+            
+            # Invoke the LLM call asynchronously (non-blocking)
+            response = await chain.ainvoke({"input_text": truncated_text})
+            return response
+        except Exception as e:
+            raise ExtractionException(f"Failed to parse or extract structured data: {str(e)}")
