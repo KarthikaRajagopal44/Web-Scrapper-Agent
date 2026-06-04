@@ -19,10 +19,10 @@ extractor_service = ExtractorService()
     response_description="A validated JSON object conforming to the requested schema."
 )
 async def extract_url_data(payload: ExtractionRequest):
-    # Step 1: Fetch and clean webpage asynchronously
+    #  Fetch and clean webpage asynchronously
     cleaned_text = await ScraperService.fetch_and_clean(str(payload.url))
     
-    # Step 2: Extract structured data from cleaned text using Gemini
+    #  Extract structured data from cleaned text using Gemini
     extracted_data = await extractor_service.extract_structured_data(
         text=cleaned_text,
         extraction_type=payload.extraction_type
