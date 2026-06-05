@@ -7,7 +7,7 @@ class ScraperService:
     async def fetch_and_clean(url: str) -> str:
         # Standard User-Agent header to minimize request rejections by target servers
         headers = {
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+            "User-Agent": "AuraWebScraper/1.0 (contact: karthii.71116@gmail.com)"
         }
         
         async with httpx.AsyncClient(timeout=10.0, follow_redirects=True) as client:
