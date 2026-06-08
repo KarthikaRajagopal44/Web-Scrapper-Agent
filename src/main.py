@@ -1,5 +1,8 @@
+from typing import Union
+
 from fastapi import FastAPI, status
 from src.schemas.request import ExtractionRequest
+from src.schemas.extraction import EcommerceProduct, LegalCompliance
 from src.services.scraper import ScraperService
 from src.services.extractor import ExtractorService
 
@@ -16,6 +19,7 @@ extractor_service = ExtractorService()
     "/v1/extract", 
     status_code=status.HTTP_200_OK,
     summary="Extract structured entities from a URL",
+    response_model=Union[EcommerceProduct, LegalCompliance],
     response_description="A validated JSON object conforming to the requested schema."
 )
 async def extract_url_data(payload: ExtractionRequest):
