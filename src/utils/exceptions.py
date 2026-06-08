@@ -7,3 +7,7 @@ class ScrapingException(HTTPException):
 class ExtractionException(HTTPException):
     def __init__(self, detail: str):
         super().__init__(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=detail)
+
+class ModelUnavailableException(HTTPException):
+    def __init__(self, detail: str):
+        super().__init__(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=detail)

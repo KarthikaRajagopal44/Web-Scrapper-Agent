@@ -4,7 +4,7 @@ from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_core.prompts import ChatPromptTemplate
 from src.config import settings
 from src.schemas.extraction import EcommerceProduct, LegalCompliance
-from src.utils.exceptions import ExtractionException
+from src.utils.exceptions import ExtractionException, ModelUnavailableException
 
 class ExtractorService:
     def __init__(self):
@@ -61,4 +61,9 @@ class ExtractorService:
             response = await chain.ainvoke({"input_text": truncated_text})
             return response
         except Exception as e:
-            raise ExtractionException(f"Failed to parse or extract structured data: {str(e)}")
+            error_text = str(e)
+            if "503" in error_text or "UNAVAILABLE" in error_text.upper() or "high demand" in error_text.lower() or "rate limit" in error_text.lower():
+                raise ModelUnavailableException(
+                    f"LLM service unavailable: {error_text}"
+                )
+            raise ExtractionException(f"Failed to parse or extract structured data: {error_text}")
